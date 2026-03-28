@@ -1,6 +1,6 @@
 # arithmetic-code
 
-Arithmetic coding compression.""".
+Arithmetic coding compression.
 
 Zero dependencies. Python 3.8+.
 

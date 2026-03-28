@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
-"""arithmetic_code - Arithmetic coding compression."""
-import sys
-from collections import Counter
-from decimal import Decimal,getcontext
-getcontext().prec=50
-def build_ranges(freq):
-    total=sum(freq.values());ranges={};low=Decimal(0)
+"""arithmetic_code - Arithmetic coding implementation."""
+import sys, collections
+def get_probs(text):
+    freq=collections.Counter(text); n=len(text)
+    probs={}; cumulative=0.0
     for char in sorted(freq):
-        high=low+Decimal(freq[char])/Decimal(total);ranges[char]=(low,high);low=high
-    return ranges
+        p=freq[char]/n; probs[char]=(cumulative, cumulative+p); cumulative+=p
+    return probs
 def encode(text):
-    freq=Counter(text);ranges=build_ranges(freq)
-    low,high=Decimal(0),Decimal(1)
-    for c in text:
-        rng=high-low;low=low+rng*ranges[c][0];high=low+rng*(ranges[c][1]-ranges[c][0])
-    return(low+high)/2,freq,len(text)
-def decode(value,freq,length):
-    ranges=build_ranges(freq);result=[]
+    probs=get_probs(text); low=0.0; high=1.0
+    for char in text:
+        r=high-low; high=low+r*probs[char][1]; low=low+r*probs[char][0]
+    return (low+high)/2, probs
+def decode(value, length, probs):
+    result=[]; inv={v:k for k,v in probs.items()}
     for _ in range(length):
-        for char,(lo,hi) in ranges.items():
+        for char,(lo,hi) in probs.items():
             if lo<=value<hi:
-                result.append(char);rng=hi-lo;value=(value-lo)/rng;break
-    return"".join(result)
+                result.append(char); value=(value-lo)/(hi-lo); break
+    return "".join(result)
 if __name__=="__main__":
-    text=sys.argv[1] if len(sys.argv)>1 else "abracadabra"
-    val,freq,length=encode(text)
-    print(f"Encoded: {val}");decoded=decode(val,freq,length)
-    print(f"Decoded: {decoded}");print(f"Match: {text==decoded}")
+    text=sys.argv[1] if len(sys.argv)>1 else "ABRACADABRA"
+    value,probs=encode(text)
+    decoded=decode(value, len(text), probs)
+    print(f"Original: {text}"); print(f"Encoded value: {value:.15f}")
+    print(f"Decoded: {decoded} (match: {decoded==text})")
+    print(f"Probabilities: {probs}")
