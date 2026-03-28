@@ -1,45 +1,29 @@
 #!/usr/bin/env python3
-"""Arithmetic coding — near-optimal entropy compression."""
+"""arithmetic_code - Arithmetic coding compression."""
 import sys
 from collections import Counter
-
-def get_ranges(text):
-    freq = Counter(text); total = len(text)
-    ranges = {}; lo = 0.0
-    for c in sorted(freq):
-        hi = lo + freq[c] / total
-        ranges[c] = (lo, hi); lo = hi
+from decimal import Decimal,getcontext
+getcontext().prec=50
+def build_ranges(freq):
+    total=sum(freq.values());ranges={};low=Decimal(0)
+    for char in sorted(freq):
+        high=low+Decimal(freq[char])/Decimal(total);ranges[char]=(low,high);low=high
     return ranges
-
 def encode(text):
-    ranges = get_ranges(text)
-    lo, hi = 0.0, 1.0
+    freq=Counter(text);ranges=build_ranges(freq)
+    low,high=Decimal(0),Decimal(1)
     for c in text:
-        r = hi - lo
-        clo, chi = ranges[c]
-        hi = lo + r * chi
-        lo = lo + r * clo
-    return (lo + hi) / 2, ranges
-
-def decode(value, length, ranges):
-    inv = {v: k for k, v in ranges.items()}
-    result = []
+        rng=high-low;low=low+rng*ranges[c][0];high=low+rng*(ranges[c][1]-ranges[c][0])
+    return(low+high)/2,freq,len(text)
+def decode(value,freq,length):
+    ranges=build_ranges(freq);result=[]
     for _ in range(length):
-        for c, (clo, chi) in ranges.items():
-            if clo <= value < chi:
-                result.append(c)
-                value = (value - clo) / (chi - clo)
-                break
-    return "".join(result)
-
-if __name__ == "__main__":
-    text = " ".join(sys.argv[1:]) or "abracadabra"
-    value, ranges = encode(text)
-    decoded = decode(value, len(text), ranges)
-    entropy = -sum(f/len(text) * __import__('math').log2(f/len(text)) for f in Counter(text).values())
-    print(f"Text:    {text!r}")
-    print(f"Value:   {value:.15f}")
-    print(f"Decoded: {decoded!r}")
-    print(f"Correct: {decoded == text}")
-    print(f"Entropy: {entropy:.3f} bits/symbol")
-    print(f"Theoretical minimum: {entropy * len(text):.1f} bits")
+        for char,(lo,hi) in ranges.items():
+            if lo<=value<hi:
+                result.append(char);rng=hi-lo;value=(value-lo)/rng;break
+    return"".join(result)
+if __name__=="__main__":
+    text=sys.argv[1] if len(sys.argv)>1 else "abracadabra"
+    val,freq,length=encode(text)
+    print(f"Encoded: {val}");decoded=decode(val,freq,length)
+    print(f"Decoded: {decoded}");print(f"Match: {text==decoded}")
