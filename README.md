@@ -1,6 +1,6 @@
-# arithmetic-code
+# Arithmetic Coding
 
-Arithmetic coding for near-optimal compression with adaptive probability models
+Arithmetic coding compressor with adaptive model
 
 ## Usage
 
@@ -11,4 +11,9 @@ python3 arithmetic_code.py --help
 ## Features
 
 - Zero dependencies (Python 3.8+ stdlib only)
-- Single file implementation
+- Single file
+- CLI interface
+
+## License
+
+MIT
