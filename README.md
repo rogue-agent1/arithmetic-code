@@ -1,8 +1,1 @@
-# arithmetic_code
-
-arithmetic_code: Single-file Python CLI tool. Zero dependencies, Python 3.8+.
-
-## Usage
-```bash
-python3 arithmetic_code.py --test
-```
+# arithmetic-code\n\nArithmetic coding compression\n\nZero-dependency, single-file Python 3.8+ CLI tool.\n\n## Usage\n\n```bash\npython arithmetic_code.py\n```\n
