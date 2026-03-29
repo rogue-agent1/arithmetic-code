@@ -1,65 +1,61 @@
 #!/usr/bin/env python3
-"""arithmetic_code: Arithmetic coding compression."""
+"""arithmetic_code - Arithmetic coding for compression."""
 import sys
+from collections import Counter
 
 def build_model(data):
-    freq = {}
-    for c in data: freq[c] = freq.get(c, 0) + 1
+    freq = Counter(data)
     total = len(data)
     cumulative = {}
     low = 0
-    for c in sorted(freq):
-        cumulative[c] = (low, low + freq[c])
-        low += freq[c]
-    return cumulative, total
+    for symbol in sorted(freq.keys()):
+        high = low + freq[symbol]
+        cumulative[symbol] = (low / total, high / total)
+        low = high
+    return cumulative
 
-def encode(data):
-    model, total = build_model(data)
-    lo, hi = 0, 1 << 32
-    for c in data:
-        rng = hi - lo
-        clo, chi = model[c]
-        hi = lo + (rng * chi) // total
-        lo = lo + (rng * clo) // total
-    return (lo + hi) // 2, len(data), model, total
+def arithmetic_encode(data, model):
+    low, high = 0.0, 1.0
+    for symbol in data:
+        rng = high - low
+        sym_low, sym_high = model[symbol]
+        high = low + rng * sym_high
+        low = low + rng * sym_low
+    return (low + high) / 2
 
-def decode(code, length, model, total):
-    reverse = {}
-    for c, (clo, chi) in model.items():
-        for i in range(clo, chi):
-            reverse[i] = c
-    lo, hi = 0, 1 << 32
+def arithmetic_decode(value, model, length):
     result = []
     for _ in range(length):
-        rng = hi - lo
-        scaled = ((code - lo) * total) // rng
-        scaled = min(scaled, total - 1)
-        c = reverse[scaled]
-        result.append(c)
-        clo, chi = model[c]
-        hi = lo + (rng * chi) // total
-        lo = lo + (rng * clo) // total
-    return "".join(result)
+        for symbol, (sym_low, sym_high) in sorted(model.items()):
+            if sym_low <= value < sym_high:
+                result.append(symbol)
+                rng = sym_high - sym_low
+                value = (value - sym_low) / rng
+                break
+    return result
 
 def test():
-    text = "abracadabra"
-    code, length, model, total = encode(text)
-    decoded = decode(code, length, model, total)
-    assert decoded == text
-    # Repeated
-    text2 = "aaaaaaa"
-    c2, l2, m2, t2 = encode(text2)
-    assert decode(c2, l2, m2, t2) == text2
-    # Two chars
-    text3 = "ababab"
-    c3, l3, m3, t3 = encode(text3)
-    assert decode(c3, l3, m3, t3) == text3
-    # Single char
-    text4 = "x"
-    c4, l4, m4, t4 = encode(text4)
-    assert decode(c4, l4, m4, t4) == text4
+    data = "ABRACADABRA"
+    model = build_model(data)
+    assert len(model) == 5
+    for sym in model:
+        lo, hi = model[sym]
+        assert 0 <= lo < hi <= 1
+    encoded = arithmetic_encode(data, model)
+    assert 0 < encoded < 1
+    decoded = arithmetic_decode(encoded, model, len(data))
+    assert "".join(decoded) == data
+    data2 = "AAABBB"
+    m2 = build_model(data2)
+    e2 = arithmetic_encode(data2, m2)
+    d2 = arithmetic_decode(e2, m2, len(data2))
+    assert "".join(d2) == data2
+    data3 = "X"
+    m3 = build_model(data3)
+    e3 = arithmetic_encode(data3, m3)
+    d3 = arithmetic_decode(e3, m3, 1)
+    assert d3 == ["X"]
     print("All tests passed!")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "test": test()
-    else: print("Usage: arithmetic_code.py test")
+    test() if "--test" in sys.argv else print("arithmetic_code: Arithmetic coding. Use --test")
