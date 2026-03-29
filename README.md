@@ -1,19 +1,11 @@
-# Arithmetic Coding
+# arithmetic_code
 
-Arithmetic coding compressor with adaptive model
+arithmetic_code: Arithmetic coding compression.
+
+Single-file, zero-dependency Python CLI.
 
 ## Usage
 
 ```bash
-python3 arithmetic_code.py --help
+python3 arithmetic_code.py test
 ```
-
-## Features
-
-- Zero dependencies (Python 3.8+ stdlib only)
-- Single file
-- CLI interface
-
-## License
-
-MIT
